@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klarna Sample Application</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 500px;
+            margin: auto;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        form {
+            padding: 20px;
+        }
+
+        .form-field {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+
+        input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        #demoLabel {
+            font-size: 20px;
+            color: #000000;
+        }
+
+        #clearCacheBtn {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            padding: 10px 20px;
+            background-color: #f00;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 1000; 
+        }
+
+        #apiResponseContainer {
+            display: inline-block; 
+            margin-right: 10px; 
+        }
+
+        #callAPIBtn {
+            display: inline-block; 
+            margin: 10px auto; 
+        }
+
+        #demoLabel {
+            text-align: center; 
+        }
+
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+</head>
+<body>
+    <div id="labelsContainer">
+        <p id="uuidLabel">NeuroID UserId not set yet</p>
+        <p id="uuidCodeLabel">NeuroID - UserId Status Code will be here</p>
+    </div>
+    <button id="clearCacheBtn">Clear cookies and cache</button>
+    <div class="container">
+        <div class="logo-container">
+            <img src="klarna_logo.png" alt="Logo">
+        </div>
+        <form id="sampleForm" action="/submit" method="post" onsubmit="submitForm(event)">
+            <p id="demoLabel">Klarna Demo Application</p>
+            <br>
+            <div id="formFieldsContainer">
+                <div class="form-field">
+                    <label for="firstName">First Name</label>
+                    <input type="text" name="firstName" id="firstName" placeholder="Enter First name" required>
+                </div>
+                <div class="form-field">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" name="lastName" id="lastName" placeholder="Enter Last name" required>
+                </div>
+                <div class="form-field">
+                    <label for="phone">Phone</label>
+                    <input type="tel" name="phone" id="phone" placeholder="Enter phone number" required>
+                </div>
+                <div class="form-field">
+                    <label for="email">Email</label>
+                    <input type="email" name="email" id="email" placeholder="Enter email" required>
+                </div>
+                <div class="form-field">
+                    <label for="address">Address</label>
+                    <input type="text" name="address" id="address" placeholder="Enter address" required>
+                </div>
+            </div>
+            <div class="form-field" id="submitBtnContainer">
+                <input type="submit" value="Submit">
+            </div>
+            <br>
+            <div id="signalsContainer"></div>
+            <div class="form-field" id="apiResponseContainer" style="display:none;">
+                <button id="callAPIBtn" onclick="callAPI()">Call API</button>
+                <pre class="api-response"><code id="apiResponse"></code></pre>
+            </div>               
+        </form>
+    </div>
+
+    <style>
+        #labelsContainer {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            width: 500px; 
+        }
+
+        #labelsContainer p {
+            margin: 0;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+        let formSubmitted = false; 
+        let nid_sessionId;
+
+        function submitForm(event) {
+            event.preventDefault();
+
+            // Check if the form has already been submitted
+            if (formSubmitted) {
+                return;
+            }
+
+            const formData = new FormData(document.getElementById('sampleForm'));
+            console.log('Form data submitted:', Object.fromEntries(formData.entries()));
+
+            // Hide the form fields container
+            document.getElementById('formFieldsContainer').style.display = 'none';
+            document.getElementById('submitBtnContainer').style.display = 'none';
+            nid('applicationSubmit', 'Demo Klarna');
+            nid('closeSession');
+
+            // Show the API button and response container
+            document.getElementById('apiResponseContainer').style.display = 'block';
+
+            // Display a message only if the form is submitted
+            if (!formSubmitted) {
+                const successMessage = 'Form submitted successfully.';
+                document.getElementById('apiResponse').innerText = successMessage;
+                formSubmitted = true; // Set the flag to true to indicate form submission
+            }
+        }
+
+        function callAPI() {
+            // Clear the inner text before making the API call
+            document.getElementById('apiResponse').innerText = '';
+
+            // Replace 'api_your_key' with your actual API key
+            const apiKey = 'api_LIVE_m0wsjj3LYIPzQdPifSz1obwW';  // Please Use LIVE API Key, should look like this: api_LIVE_42985dsfasd234erR
+
+            // Make the API call
+            fetch(`http://localhost:3000/v4.1/sites/form_hails661/profiles/sessions/${nid_sessionId}`, {   // Please update site_id, should look like this "form_abcd123"
+                method: 'GET',
+                headers: {
+                    'API-KEY': apiKey,
+                    'accept': 'application/json'
+                },
+            })
+            .then(response => {
+            console.log('Response Status:', response.status);
+            console.log('Response Headers:', response.headers);
+            return response.json();
+            })
+            .then(data => {
+                // Check if 'profile' and 'signals' are defined in the response
+                if (data.profile && data.profile.signals && data.profile.signals.length > 0) {
+                    // Extract labels for "Combined Digital Intent","familiarity," "Fraud Ring Indicator," "Automated Activity," and "Risky Device"
+                    const combinedDigitalIntentLabel = data.profile.signals.find(signal => signal.model === 'combined_digital_intent')?.label;
+                    const familiarityLabel = data.profile.signals.find(signal => signal.model === 'familiarity')?.label;
+                    const fraudRingLabel = data.profile.signals.find(signal => signal.model === 'fraud_ring_indicator')?.label;
+                    const automatedActivityLabel = data.profile.signals.find(signal => signal.model === 'automated_activity')?.label;
+                    const riskyDeviceLabel = data.profile.signals.find(signal => signal.model === 'risky_device')?.label;
+
+                    // Function to determine color based on label
+                    function getColor(label) {
+                        switch (label) {
+                            case 'high':
+                                return 'green';
+                            case 'genuine':
+                                return 'green';
+                            case 'risky':
+                                return 'red';
+                            case 'true':
+                                return 'red';
+                            case 'low':
+                                return 'red';
+                            case 'neutral':
+                                return 'orange';
+                            case 'medium':
+                                return 'orange';
+                            default:
+                                return 'black';
+                        }
+                    }
+
+                    // Display the extracted labels with colors in separate boxes
+                    const signalsContainer = document.getElementById('signalsContainer');
+                    signalsContainer.innerHTML = ''; // Clear existing content
+
+                    // Display box for Combined Digital Intent
+                    const combinedDigitalIntentBox = document.createElement('div');
+                    combinedDigitalIntentBox.style.color = getColor(combinedDigitalIntentLabel);
+                    combinedDigitalIntentBox.innerHTML = `<strong>Combined Digital Intent:</strong> ${combinedDigitalIntentLabel}`;
+                    signalsContainer.appendChild(combinedDigitalIntentBox);
+
+                    // Display box for Familiarity
+                    const familiarityBox = document.createElement('div');
+                    familiarityBox.style.color = getColor(familiarityLabel);
+                    familiarityBox.innerHTML = `<strong>Familiarity:</strong> ${familiarityLabel}`;
+                    signalsContainer.appendChild(familiarityBox);
+
+                    // Display box for Fraud Ring Indicator
+                    const fraudRingBox = document.createElement('div');
+                    fraudRingBox.style.color = getColor(fraudRingLabel);
+                    fraudRingBox.innerHTML = `<strong>Fraud Ring Indicator:</strong> ${fraudRingLabel}`;
+                    signalsContainer.appendChild(fraudRingBox);
+
+                    // Display box for Automated Activity
+                    const automatedActivityBox = document.createElement('div');
+                    automatedActivityBox.style.color = getColor(automatedActivityLabel);
+                    automatedActivityBox.innerHTML = `<strong>Automated Activity:</strong> ${automatedActivityLabel}`;
+                    signalsContainer.appendChild(automatedActivityBox);
+
+                    // Display box for Risky Device
+                    const riskyDeviceBox = document.createElement('div');
+                    riskyDeviceBox.style.color = getColor(riskyDeviceLabel);
+                    riskyDeviceBox.innerHTML = `<strong>Risky Device:</strong> ${riskyDeviceLabel}`;
+                    signalsContainer.appendChild(riskyDeviceBox);
+
+                    // Display the extracted data
+                    const dataText = JSON.stringify(data, null, 2);
+                    // Append the JSON object to the existing content
+
+                    document.getElementById('apiResponse').innerHTML = dataText;
+                    hljs.highlightElement(document.getElementById('apiResponse'));
+
+                } else {
+                    document.getElementById('apiResponse').innerText = 'No signals found in the response.';
+                }
+
+                // Dynamically adjust the container width
+                document.querySelector('.container').style.width = '1200px'; // Adjust the width as needed
+
+                // Hide the "Call API" button
+                document.getElementById('callAPIBtn').style.display = 'none';
+
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('apiResponse').innerText = `Error occurred during API call: ${error.message}`;
+            });
+
+        }
+
+            
+        (function(n,e,u,r,o,i,d){
+            n.nid=n.nid||function(){(n.nid.q=n.nid.q||[]).push(arguments)};
+            o=e.createElement(u);i=e.getElementsByTagName(u)[0];o.async=1;
+            o.src=r;i.parentNode.insertBefore(o,i);
+        })(window,document,'script','https://scripts.neuro-id.com/c/nid-hails661.js'); // Please update with your site_id, should look like this: https://scripts.neuro-id.com/c/nid-abcd123.js
+        
+        // Function to start NeuroID session and handle session ID
+        function startNeuroIDSession() {
+            // Check if session ID exists in local storage
+            let storedSessionId = localStorage.getItem('nid_sid');
+
+            if (storedSessionId) {
+                // Use the stored session ID
+                console.log("Using stored NeuroID SessionId:", storedSessionId);
+                nid('start', { sessionId: storedSessionId }, function(result) {
+                    console.log("NeuroID SessionId:", result.sessionId);
+                    console.log("NeuroID Status Code:", result.status.code);
+                    console.log("NeuroID Status Message:", result.status.message);
+                    nid_sessionId = result.sessionId;
+                    nid_codeStatus = result.status.code;
+                    document.getElementById('uuidLabel').innerHTML = "NeuroID SessionId: " + nid_sessionId + "<br/>";
+                    document.getElementById('uuidCodeLabel').innerHTML = "NeuroID Status Code: " + nid_codeStatus + "<br/>";
+                });
+            } else {
+                // Start a new NeuroID session
+                nid('start', function(result) {
+                    console.log("NeuroID SessionId:", result.sessionId);
+                    console.log("NeuroID Status Code:", result.status.code);
+                    console.log("NeuroID Status Message:", result.status.message);
+                    nid_sessionId = result.sessionId;
+                    nid_codeStatus = result.status.code;
+                    document.getElementById('uuidLabel').innerHTML = "NeuroID SessionId: " + nid_sessionId + "<br/>";
+                    document.getElementById('uuidCodeLabel').innerHTML = "NeuroID Status Code: " + nid_codeStatus + "<br/>";
+
+                    // Save session ID to local storage
+                    localStorage.setItem('nid_sid', result.sessionId);
+                });
+            }
+        }
+
+        // Call the function to start NeuroID session
+        startNeuroIDSession();
+
+        nid('setVariable', 'funnel', 'Demo Klarna');
+    </script>
+
+    <script>
+        document.getElementById('clearCacheBtn').addEventListener('click', function() {
+            // Clear browser cache and do hard reload
+            window.location.reload(true);
+
+            // Clear site data including third-party cookies
+            if ('cache' in window) {
+                caches.keys().then(function(cacheNames) {
+                    cacheNames.forEach(function(cacheName) {
+                        caches.delete(cacheName);
+                    });
+                });
+            }
+            if ('storage' in navigator && 'estimate' in navigator.storage) {
+                navigator.storage.estimate().then(function(estimate) {
+                    console.log('Cache cleared:', estimate);
+                });
+            }
+
+            // Clear session storage and local storage
+            sessionStorage.clear();
+            localStorage.clear();
+        });
+    </script>
+</body>
+</html>
